@@ -2,6 +2,7 @@ six
 oauthlib
 requests
 requests_oauthlib
+requests-toolbelt
 python-librsync
 coveralls
 coverage

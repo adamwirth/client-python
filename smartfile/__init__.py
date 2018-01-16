@@ -14,6 +14,7 @@ except ImportError:
 
 import requests
 from requests.exceptions import RequestException
+from requests_toolbelt import MultipartEncoder
 
 from smartfile.errors import APIError
 from smartfile.errors import RequestError
@@ -79,6 +80,7 @@ class Client(object):
             raise RequestError('Invalid method %s' % method)
         # Find files, separate them out to correct kwarg for requests.
         data = kwargs.get('data')
+        mpe_data = None
         if data:
             files = {}
             for name, value in list(data.items()):
@@ -87,7 +89,9 @@ class Client(object):
                 if hasattr(value, 'read') or isinstance(value, tuple):
                     files[name] = data.pop(name)
             if files:
-                kwargs.setdefault('files', {}).update(files)
+                mpe_data = MultipartEncoder(fields=files)
+                kwargs['data'] = mpe_data
+                # kwargs.setdefault('files', {}).update(files)
         path = ['api', self.version, endpoint]
         # If we received an ID, append it to the path.
         if id:
@@ -102,6 +106,8 @@ class Client(object):
         # Add our user agent.
         kwargs.setdefault('headers', {}).setdefault('User-Agent',
                                                     HTTP_USER_AGENT)
+        if mpe_data:
+            kwargs['headers']['content-type'] = mpe_data.content_type
         # Now try the request, if we get throttled, sleep and try again.
         trys, retrys = 0, 3
         while True:
